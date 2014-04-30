@@ -12,26 +12,35 @@ http.createServer(function (request, response) {
         	(new Db('integration_tests', new Server("127.0.0.1", 27017, {auto_reconnect: false, poolSize: 4}), {w:0, native_parser: false})).open (function (err, db) {
 				if (err) {
 					console.log (err);
-					response.write(JSON.stringify(err));
+					response.write(JSON.stringify({ error: err }));
 					response.end();
 				} else {
 
 					db.collection("some", function (err, collection) {
 						if (err) {
 							console.log (err);
-							response.write(JSON.stringify(err));
+							response.write(JSON.stringify({ error: err }));
 							response.end();
 						} else {
 
 							switch (request.url) {
 								case "/save":
+									var data;
+									try {
+										var keys = Object.keys(request.post);
+										if ((keys.length == 1) && (request.post[keys[0]] == "")) {
+											data = JSON.parse (keys[0]);
+										}
+									} catch (notJson) {
+										data = request.post;
+									}
 									// http://mongodb.github.io/node-mongodb-native/markdown-docs/insert.html
-									collection.save (request.post, {w:1}, function (err, record) {
+									collection.save (data, {w:1}, function (err, record) {
 										if (err) {
 											console.log (err);
-											response.write(JSON.stringify(err));db.close();
+											response.write(JSON.stringify({ error: err }));
 										} else {
-											response.write("Saved " + JSON.stringify(record));
+											response.write(JSON.stringify(record));
 										}
 
 										response.end();
@@ -44,17 +53,17 @@ http.createServer(function (request, response) {
 									var query = [];
 									for (var key in request.post) {
 										var condition = {};
-										condition[key] = request.post[key];
+										if (request.post[key] && (request.post[key] != "")) condition[key] = request.post[key];
 										query.push (condition);
 									}
 
-									console.log("Looking for: " + JSON.stringify({ $or: query }));
+									//console.log("Looking for: " + JSON.stringify({ $or: query }));
 									collection.find ({ $or: query }).toArray(function (err, results){
 										if (err) {
 											console.log (err);
-											response.write(JSON.stringify(err));
+											response.write(JSON.stringify({ error: err }));
 										} else {
-											response.write("Found " + JSON.stringify(results));
+											response.write(JSON.stringify(results));
 										}
 
 										response.end();
