@@ -31,6 +31,8 @@ http.createServer(function (request, response) {
 											console.log (err);
 											response.write(JSON.stringify(err));db.close();
 										} else {
+											console.log (record);
+											console.log ("Saved " + JSON.stringify(record));
 											response.write("Saved " + JSON.stringify(record));
 										}
 
