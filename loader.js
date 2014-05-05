@@ -5,21 +5,21 @@ var	nconf = require('nconf'),
 	pidFilePath = __dirname + '/pidfile',
 	start = function() {
 		var	fork = require('child_process').fork,
-			nbb_start = function() {
-				nbb = fork('./app', process.argv.slice(2), {
+			ss_start = function() {
+				ss = fork('./app', process.argv.slice(2), {
 						env: {
 							'NODE_ENV': process.env.NODE_ENV
 						}
 					});
 
-				nbb.on('message', function(cmd) {
+				ss.on('message', function(cmd) {
 					if (cmd === 'ss:restart') {
 						nbb_restart();
 					}
 				});
 			},
-			nbb_stop = function() {
-				nbb.kill();
+			ss_stop = function() {
+				ss.kill();
 				if (fs.existsSync(pidFilePath)) {
 					var	pid = parseInt(fs.readFileSync(pidFilePath, { encoding: 'utf-8' }), 10);
 					if (process.pid === pid) {
@@ -27,31 +27,31 @@ var	nconf = require('nconf'),
 					}
 				}
 			},
-			nbb_restart = function() {
-				nbb.on('exit', function() {
-					nbb_start();
+			ss_restart = function() {
+				ss.on('exit', function() {
+					ss_start();
 				});
-				nbb.kill();
+				ss.kill();
 			};
 
-		process.on('SIGINT', nbb_stop);
-		process.on('SIGTERM', nbb_stop);
-		process.on('SIGHUP', nbb_restart);
+		process.on('SIGINT', ss_stop);
+		process.on('SIGTERM', ss_stop);
+		process.on('SIGHUP', ss_restart);
 
-		nbb_start();
+		ss_start();
 	},
-	nbb;
+	ss;
 
 nconf.argv();
 
 // Start the daemon!
 if (nconf.get('d')) {
-	// Check for a still-active NodeBB process
+	// Check for a still-active Stacktrace Storage process
 	if (fs.existsSync(pidFilePath)) {
 		try {
 			var	pid = fs.readFileSync(pidFilePath, { encoding: 'utf-8' });
 			process.kill(pid, 0);
-			console.log('\n  Error: Another NodeBB is already running!');
+			console.log('\n  Error: Another Stacktrace Storage is already running!');
 			process.exit();
 		} catch (e) {
 			fs.unlinkSync(pidFilePath);
